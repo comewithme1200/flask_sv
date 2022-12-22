@@ -3,10 +3,14 @@
 # standard python imports
 
 from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
 from flask_mysqldb import MySQL
 import uuid
+import jwt
+import date_time
+from functools import wraps
 import jwt
 import date_time
 from functools import wraps
@@ -17,6 +21,7 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'truong_hoc'
+app.config['SECRET_KEY'] = 'secretkey'
 app.config['SECRET_KEY'] = 'secretkey'
 jwt = JWTManager(app)
 api = Api(app)
