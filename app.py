@@ -2,11 +2,14 @@
 # -*- coding: utf-8 -*-
 # standard python imports
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
 from flask_mysqldb import MySQL
 import uuid
+import jwt
+import date_time
+from functools import wraps
 
 app = Flask(__name__)
 
@@ -14,9 +17,45 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'truong_hoc'
+app.config['SECRET_KEY'] = 'secretkey'
 jwt = JWTManager(app)
 api = Api(app)
 mysql = MySQL(app)
+
+
+# authentication
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('token')
+
+        if not token:
+            return jsonify({'message' : 'Token is missing'})
+
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+        except:
+            return make_response('Forbidden', 403)
+
+        return f(*arg, **kwargs)
+
+@app.route('/login')
+def login():
+    jsonData = request.get_json()
+    ten_dang_nhap = jsonData['ten_dang_nhap']
+    mat_khau = jsonData['mat_khau']
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap=%s", (mat_khau, ten_dang_nhap))
+    userPasswd = jsonify(cur.fetchone())
+    cur.close()
+
+    if userPasswd == '' or mat_khau != userPasswd:
+        return make_response('Sai tài khoản hoặc mật khẩu', 401)
+    else if userPasswd == mat_khau:
+        token = jwt.encode({'ten_dang_nhap' : ten_dang_nhap, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)})
+        return jsonify({'token' : token.decode('UTF-8')})
 
 # APIs
 @app.route('/sinh_vien', methods=['POST'])
