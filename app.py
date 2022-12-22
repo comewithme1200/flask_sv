@@ -9,10 +9,9 @@ from flask_restful import Api
 from flask_mysqldb import MySQL
 import uuid
 import jwt
-import date_time
+import datetime
 from functools import wraps
 import jwt
-import date_time
 from functools import wraps
 
 app = Flask(__name__)
@@ -23,7 +22,7 @@ app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'truong_hoc'
 app.config['SECRET_KEY'] = 'secretkey'
 app.config['SECRET_KEY'] = 'secretkey'
-jwt = JWTManager(app)
+# jwt = JWTManager(app)
 api = Api(app)
 mysql = MySQL(app)
 
@@ -52,15 +51,23 @@ def login():
 
     cur = mysql.connection.cursor()
 
-    cur.execute("SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap=%s", (mat_khau, ten_dang_nhap))
-    userPasswd = jsonify(cur.fetchone())
+    # cur.execute("SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap=%s", (ten_dang_nhap))
+    cur.execute("SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap = \"admin\"")
+
+    userPasswd = cur.fetchone()[0]
+    print(userPasswd[0])
     cur.close()
 
-    if userPasswd == '' or mat_khau != userPasswd:
+    if userPasswd == '' or mat_khau != userPasswd :
         return make_response('Sai tài khoản hoặc mật khẩu', 401)
-    else if userPasswd == mat_khau:
-        token = jwt.encode({'ten_dang_nhap' : ten_dang_nhap, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)})
-        return jsonify({'token' : token.decode('UTF-8')})
+    elif userPasswd == mat_khau :
+        payload = {
+            'ten_dang_nhap' : ten_dang_nhap,
+            'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+        }
+        token = jwt.encode(payload, 'SECRET', algorithm='HS256')
+        print(token.decode())
+        return jsonify({'token' : token.decode()})
 
 # APIs
 @app.route('/sinh_vien', methods=['POST'])
@@ -138,7 +145,7 @@ def them_giang_vien():
       
     cur = mysql.connection.cursor()
 
-    cur.execute("INSERT INTO giang_vien (ma_giang_vien, ho_ten, gioi_tinh, ngay_sinh, khoa, chuc_vu) VALUES (%s, %s, %s, %s, %s, %s)", (ma_giang_vien, ho_ten, gioi_tinh, ngay_sinh, que_quan, lop, khoa))
+    cur.execute("INSERT INTO giang_vien (ma_giang_vien, ho_ten, gioi_tinh, ngay_sinh, khoa, chuc_vu) VALUES (%s, %s, %s, %s, %s, %s)", (ma_giang_vien, ho_ten, gioi_tinh, ngay_sinh, khoa, chuc_vu))
     mysql.connection.commit()
 
     return 'Success'
@@ -156,9 +163,9 @@ def sua_giang_vien():
     cur = mysql.connection.cursor()
     cur.execute("""
                UPDATE giang_vien
-               SET ho_ten=%s, gioi_tinh=%s, ngay_sinh=%s, lop=%s, khoa=%s, chuc_vu=%s
+               SET ho_ten=%s, gioi_tinh=%s, ngay_sinh=%s, khoa=%s, chuc_vu=%s
                WHERE ma_giang_vien=%s
-            """, (ho_ten, gioi_tinh, ngay_sinh, que_quan, lop, khoa, chuc_vu, ma_giang_vien))
+            """, (ho_ten, gioi_tinh, ngay_sinh, khoa, chuc_vu, ma_giang_vien))
     mysql.connection.commit()
     return 'success'
 
@@ -243,7 +250,7 @@ def them_chi_tiet_hoc_phan():
       
     cur = mysql.connection.cursor()
 
-    cur.execute("INSERT INTO chi_tiet_hoc_phan (ma_chi_tiet, ma_hoc_phan, ma_sinh_vien, ma_giang_vien, diem) VALUES (%s, %s)", (ma_chi_tiet, ma_hoc_phan, ma_sinh_vien, ma_giang_vien, diem))
+    cur.execute("INSERT INTO chi_tiet_hoc_phan (ma_chi_tiet, ma_hoc_phan, ma_sinh_vien, ma_giang_vien, diem) VALUES (%s, %s, %s, %s, %s)", (ma_chi_tiet, ma_hoc_phan, ma_sinh_vien, ma_giang_vien, diem))
     mysql.connection.commit()
 
     return 'Success'
@@ -260,7 +267,7 @@ def sua_chi_tiet_hoc_phan():
     cur = mysql.connection.cursor()
     cur.execute("""
                UPDATE chi_tiet_hoc_phan
-               SET ma_hoc_phan=%s, ma_sinh_vien=%s, ma_giang_vien=%s, diem=%s,
+               SET ma_hoc_phan=%s, ma_sinh_vien=%s, ma_giang_vien=%s, diem=%s
                WHERE ma_chi_tiet=%s
             """, (ma_hoc_phan, ma_sinh_vien, ma_giang_vien, diem, ma_chi_tiet))
     mysql.connection.commit()
