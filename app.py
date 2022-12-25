@@ -115,8 +115,9 @@ def sua_sinh_vien():
 
 @app.route('/sinh_vien', methods=['GET'])
 def get_sinh_vien():  
+    key = request.args.get('ho_ten')
     cur = mysql.connection.cursor()
-    cur.execute("SELECT  * FROM sinh_vien")
+    cur.execute("SELECT  * FROM sinh_vien where ho_ten like '%" + key + "%'")
     datas = cur.fetchall()
     cur.close()
 
@@ -209,8 +210,9 @@ def sua_giang_vien():
 
 @app.route('/giang_vien', methods=['GET'])
 def get_giang_vien():  
+    key = request.args.get('ho_ten')
     cur = mysql.connection.cursor()
-    cur.execute("SELECT  * FROM giang_vien")
+    cur.execute("SELECT  * FROM giang_vien where ho_ten like '%" + key + "%'")
     datas = cur.fetchall()
     cur.close()
 
@@ -290,8 +292,9 @@ def sua_hoc_phan():
 
 @app.route('/hoc_phan', methods=['GET'])
 def get_hoc_phan():  
+    key = request.args.get('ten')
     cur = mysql.connection.cursor()
-    cur.execute("SELECT  * FROM hoc_phan")
+    cur.execute("SELECT  * FROM hoc_phan where ten_hoc_phan like '%" + key + "%'")
     datas = cur.fetchall()
     cur.close()
 
