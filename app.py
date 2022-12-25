@@ -65,13 +65,16 @@ def login():
         return make_response('Sai tài khoản hoặc mật khẩu', 401)
     elif userPasswd == mat_khau :
         cur = mysql.connection.cursor()
-        queryStrQuyen = "SELECT quyen FROM tai_khoan WHERE ten_dang_nhap = \"" + ten_dang_nhap + "\""
+        queryStrQuyen = "SELECT quyen, ma FROM tai_khoan WHERE ten_dang_nhap = \"" + ten_dang_nhap + "\""
         cur.execute(queryStrQuyen)
-        quyen = cur.fetchone()[0]
+        data = cur.fetchone()
+        quyen = data[0]
+        ma = data[1]
         cur.close()
         return jsonify({
             "ten_dang_nhap": ten_dang_nhap,
-            "quyen": quyen
+            "quyen": quyen,
+            "ma": ma
         })
 
 # APIs
@@ -136,7 +139,6 @@ def get_sinh_vien():
 
 
     return jsonify(result)
-    # print(jsontify(data))
 
 @app.route('/sinh_vien/<id>', methods=['GET'])
 def get_one_sinh_vien(id):  
