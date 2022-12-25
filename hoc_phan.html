@@ -401,6 +401,15 @@
             <div class="card shadow mb-4">
               <a href="create_hoc_phan.html">Tạo học phần</a>
               <div class="card-body">
+                <label
+                  >Tìm kiếm:<input
+                    id="search"
+                    type="search"
+                    class="form-control form-control-sm"
+                    placeholder="Nhập tên học phần..."
+                  />
+                  <button onClick="timKiem()">Tìm kiếm</button></label
+                >
                 <div class="table-responsive">
                   <table
                     class="table table-bordered"
@@ -505,6 +514,10 @@
         username);
 
       async function fetchHocPhan() {
+        var key =
+          localStorage.getItem("searchKey") == null
+            ? ""
+            : localStorage.getItem("searchKey");
         var myHeaders = new Headers();
         myHeaders.append("Content-Type", "application/json");
         var requestOptions = {
@@ -512,7 +525,7 @@
           headers: myHeaders,
         };
         const response = await fetch(
-          "http://127.0.0.1:5000/hoc_phan",
+          "http://127.0.0.1:5000/hoc_phan?ten=" + key,
           requestOptions
         );
         return await response.json();
@@ -527,6 +540,7 @@
         for (const data in datas) {
           addRow(datas[data]);
         }
+        localStorage.removeItem("searchKey");
       }
 
       function addRow(data) {
@@ -554,10 +568,17 @@
       }
       doTask();
       function capNhatHocPhan(maHocPhan) {
-        // var a = document.getElementById(maHocPhan);
         localStorage.setItem("maHocPhan", maHocPhan);
       }
-
+      function timKiem() {
+        $("#dataTable1 td").remove();
+        var searchKey = document.getElementById("search").value;
+        localStorage.setItem("searchKey", searchKey);
+        document
+          .getElementById("search")
+          .setAttribute("value", localStorage.getItem("searchKey"));
+        doTask();
+      }
       async function callApiXoaHocPhan(id) {
         var myHeaders = new Headers();
         myHeaders.append("Content-Type", "application/json");

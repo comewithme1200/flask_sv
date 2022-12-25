@@ -385,10 +385,13 @@
               <div class="card-body">
                 <label
                   >Tìm kiếm:<input
+                    id="search"
                     type="search"
                     class="form-control form-control-sm"
-                    placeholder=""
-                /></label>
+                    placeholder="Nhập tên giảng viên..."
+                  />
+                  <button onClick="timKiem()">Tìm kiếm</button></label
+                >
 
                 <a href="create_giang_vien.html">Tạo giảng viên</a>
                 <div class="table-responsive">
@@ -499,6 +502,10 @@
         username);
 
       async function fetchGiangVien() {
+        var key =
+          localStorage.getItem("searchKey") == null
+            ? ""
+            : localStorage.getItem("searchKey");
         var myHeaders = new Headers();
         myHeaders.append("Content-Type", "application/json");
         var requestOptions = {
@@ -506,7 +513,7 @@
           headers: myHeaders,
         };
         const response = await fetch(
-          "http://127.0.0.1:5000/giang_vien",
+          "http://127.0.0.1:5000/giang_vien?ho_ten=" + key,
           requestOptions
         );
         return await response.json();
@@ -521,6 +528,7 @@
         for (const data in datas) {
           addRow(datas[data]);
         }
+        localStorage.removeItem("searchKey");
       }
 
       function addRow(data) {
@@ -556,8 +564,16 @@
       }
       doTask();
       function capNhatGiangVien(maGiangVien) {
-        // var a = document.getElementById(maGiangVien);
         localStorage.setItem("maGiangVien", maGiangVien);
+      }
+      function timKiem() {
+        $("#dataTable1 td").remove();
+        var searchKey = document.getElementById("search").value;
+        localStorage.setItem("searchKey", searchKey);
+        document
+          .getElementById("search")
+          .setAttribute("value", localStorage.getItem("searchKey"));
+        doTask();
       }
 
       async function callApiXoaGiangVien(id) {
