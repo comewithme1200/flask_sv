@@ -13,9 +13,10 @@ import datetime
 from functools import wraps
 import jwt
 from functools import wraps
-
+from flask_cors import CORS, cross_origin
 app = Flask(__name__)
-
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
@@ -43,7 +44,8 @@ def token_required(f):
 
         return f(*arg, **kwargs)
 
-@app.route('/login')
+@app.route('/login', methods=['POST'])
+@cross_origin()
 def login():
     jsonData = request.get_json()
     ten_dang_nhap = jsonData['ten_dang_nhap']
@@ -51,8 +53,9 @@ def login():
 
     cur = mysql.connection.cursor()
 
-    # cur.execute("SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap=%s", (ten_dang_nhap))
-    cur.execute("SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap = \"admin\"")
+    queryStrTenDangNhap = "SELECT mat_khau FROM tai_khoan WHERE ten_dang_nhap = \"" + ten_dang_nhap + "\""
+    print(queryStrTenDangNhap)
+    cur.execute(queryStrTenDangNhap)
 
     userPasswd = cur.fetchone()[0]
     print(userPasswd[0])
@@ -61,28 +64,27 @@ def login():
     if userPasswd == '' or mat_khau != userPasswd :
         return make_response('Sai tài khoản hoặc mật khẩu', 401)
     elif userPasswd == mat_khau :
-        payload = {
-            'ten_dang_nhap' : ten_dang_nhap,
-            'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
-        }
-        token = jwt.encode(payload, 'SECRET', algorithm='HS256')
-        print(token.decode())
-        return jsonify({'token' : token.decode()})
+        cur = mysql.connection.cursor()
+        queryStrQuyen = "SELECT quyen FROM tai_khoan WHERE ten_dang_nhap = \"" + ten_dang_nhap + "\""
+        cur.execute(queryStrQuyen)
+        quyen = cur.fetchone()[0]
+        cur.close()
+        return jsonify({
+            "ten_dang_nhap": ten_dang_nhap,
+            "quyen": quyen
+        })
 
 # APIs
 @app.route('/sinh_vien', methods=['POST'])
 def them_sinh_vien():
     jsonData = request.get_json()
-    print(str(uuid.uuid4()))
     ma_sinh_vien = str(uuid.uuid4())
-    print(ma_sinh_vien)
     ho_ten = jsonData['ho_ten']
     gioi_tinh = jsonData['gioi_tinh']
     ngay_sinh = jsonData['ngay_sinh']
     que_quan = jsonData['que_quan']
     lop = jsonData['lop']
     khoa = jsonData['khoa']
-
       
     cur = mysql.connection.cursor()
 
@@ -115,19 +117,55 @@ def sua_sinh_vien():
 def get_sinh_vien():  
     cur = mysql.connection.cursor()
     cur.execute("SELECT  * FROM sinh_vien")
-    data = cur.fetchall()
+    datas = cur.fetchall()
     cur.close()
 
-    return jsonify(data)
+    result = []
+
+    for data in datas:
+        result.append({
+            "ma_sinh_vien": data[0],
+            "ho_ten": data[1],
+            "gioi_tinh": data[2],
+            "ngay_sinh": data[3],
+            "que_quan": data[4],
+            "lop": data[5],
+            "khoa": data[6],
+            })
+
+
+    return jsonify(result)
     # print(jsontify(data))
 
+@app.route('/sinh_vien/<id>', methods=['GET'])
+def get_one_sinh_vien(id):  
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT  * FROM sinh_vien where ma_sinh_vien = "+id)
+    data = cur.fetchone()
+    print(data)
+    cur.close()
+
+    result = ({
+            "ma_sinh_vien": data[0],
+            "ho_ten": data[1],
+            "gioi_tinh": data[2],
+            "ngay_sinh": data[3],
+            "que_quan": data[4],
+            "lop": data[5],
+            "khoa": data[6],
+        })
+
+    return jsonify(result)
+
+    result = []
 
 @app.route('/sinh_vien', methods=['DELETE'])
 def xoa_sinh_vien():  
     jsonData = request.get_json()
     ma_sinh_vien = jsonData['ma_sinh_vien']
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM sinh_vien WHERE ma_sinh_vien=%s", (ma_sinh_vien))
+    # cur.execute("DELETE FROM sinh_vien WHERE ma_sinh_vien=%s", (ma_sinh_vien))
+    cur.execute("DELETE FROM sinh_vien WHERE ma_sinh_vien = " + ma_sinh_vien)
     mysql.connection.commit()
     return 'success'
 
@@ -173,10 +211,42 @@ def sua_giang_vien():
 def get_giang_vien():  
     cur = mysql.connection.cursor()
     cur.execute("SELECT  * FROM giang_vien")
-    data = cur.fetchall()
+    datas = cur.fetchall()
     cur.close()
 
-    return jsonify(data)
+    result = []
+
+    for data in datas:
+        result.append({
+            "ma_giang_vien": data[0],
+            "ho_ten": data[1],
+            "gioi_tinh": data[2],
+            "ngay_sinh": data[3],
+            "khoa": data[4],
+            "chuc_vu": data[5],
+            })
+
+
+    return jsonify(result)
+
+@app.route('/giang_vien/<id>', methods=['GET'])
+def get_one_giang_vien(id):  
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT  * FROM giang_vien where ma_giang_vien = "+id)
+    data = cur.fetchone()
+    print(data)
+    cur.close()
+
+    result = {
+            "ma_giang_vien": data[0],
+            "ho_ten": data[1],
+            "gioi_tinh": data[2],
+            "ngay_sinh": data[3],
+            "khoa": data[4],
+            "chuc_vu": data[5],
+            }
+
+    return jsonify(result)
 
 
 @app.route('/giang_vien', methods=['DELETE'])
@@ -222,10 +292,34 @@ def sua_hoc_phan():
 def get_hoc_phan():  
     cur = mysql.connection.cursor()
     cur.execute("SELECT  * FROM hoc_phan")
-    data = cur.fetchall()
+    datas = cur.fetchall()
     cur.close()
 
-    return jsonify(data)
+    result = []
+
+    for data in datas:
+        result.append({
+            "ma_hoc_phan": data[0],
+            "ten_hoc_phan": data[1],
+            })
+
+
+    return jsonify(result)
+
+@app.route('/hoc_phan/<id>', methods=['GET'])
+def get_one_hoc_phan(id):  
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT  * FROM hoc_phan where ma_hoc_phan = "+id)
+    data = cur.fetchone()
+    print(data)
+    cur.close()
+
+    result = {
+            "ma_hoc_phan": data[0],
+            "ten_hoc_phan": data[1],
+            }
+
+    return jsonify(result)
 
 
 @app.route('/hoc_phan', methods=['DELETE'])
@@ -233,7 +327,7 @@ def xoa_hoc_phan():
     jsonData = request.get_json()
     ma_hoc_phan = jsonData['ma_hoc_phan']
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM hoc_phan WHERE ma_hoc_phan=%s", (ma_hoc_phan))
+    cur.execute("DELETE FROM hoc_phan WHERE ma_hoc_phan = " + ma_hoc_phan)
     mysql.connection.commit()
     return 'success'
 
